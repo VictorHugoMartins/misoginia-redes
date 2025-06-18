@@ -21,10 +21,21 @@ import random
 
 # Configuração do timeout
 import socket
+
+from youtube_transcript_api import YouTubeTranscriptApi
+
 # timeout_in_sec = 15
 timeout_in_sec = 60*3 # 3 minutes timeout limit
 socket.setdefaulttimeout(timeout_in_sec)
 
+def get_transcription(id):
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(id, languages=['pt-br'])  # Ajuste idiomas, se necessário
+        transcription_text = " ".join([entry['text'] for entry in transcript])
+        return transcription_text
+    except Exception:
+        return None
+    
 class YouTubeAPIManager:
     YOUTUBE_API_SERVICE_NAME = 'youtube'
     YOUTUBE_API_VERSION = 'v3'
@@ -94,7 +105,7 @@ class YouTubeAPIManager:
         if self.daily_quota < 10000:
             print("A chave atual reduziu a cota diária. Trocando de chave...")
 
-        if self.daily_cost + request_cost > self.daily_quota:
+        if False: #self.daily_cost + request_cost > self.daily_quota:
             log("key", "Cota diária da chave excedida. Trocando de chave...")
             self.youtube = self.get_new_youtube_client()
             return self.make_api_request(method_func, method_name='',**kwargs)
@@ -412,12 +423,12 @@ def process_video(video_id, video_title, processed_videos):
         return
     total_comment_count = video_details['comment_count']  # Assumindo que 'comment_count' é o total de comentários disponíveis
 
+    pd.DataFrame([video_details]).to_csv('files/videos_info.csv', mode='a', header=not videos_file_exists, index=False)
+    
+    channel_details = get_channel_details(video_details['channel_id'])
+    pd.DataFrame([channel_details]).to_csv('files/channels_info.csv', mode='a', header=not channels_file_exists, index=False)
+        
     if total_comment_count > 0 and total_comment_count < 10000000000000: #Sentinel 
-        pd.DataFrame([video_details]).to_csv('files/videos_info.csv', mode='a', header=not videos_file_exists, index=False)
-        
-        channel_details = get_channel_details(video_details['channel_id'])
-        pd.DataFrame([channel_details]).to_csv('files/channels_info.csv', mode='a', header=not channels_file_exists, index=False)
-        
         try:
             comments = get_comments(video_id, video_title, total_comment_count)
             comments_df = pd.DataFrame(comments)
@@ -629,10 +640,11 @@ def main():
                             print("A coleta dos detalhes do vídeo falhou. Indo para o próximo vídeo.")
                             continue
 
+                        video_details['transcription'] = get_transcription(video_id)
                         comment_count = video_details.get('comment_count', 0)
                         print("Title:", video_details.get('title', 'N/A'), "# comments", comment_count)
                         
-                        if comment_count > 0:
+                        if comment_count >= 0:
                             process_video(video_id, "", processed_videos)
                 except Exception as e:
                     print(f"Ocorreu um erro ao processar o vídeo {video_id}: {e}")
