@@ -422,10 +422,10 @@ def process_video(video_id, video_title, processed_videos):
     comments_file_exists = os.path.isfile('files/comments_info.csv')
 
     video_details = get_video_details(video_id)
-    video_details['transcription'] = get_transcription(video_id)
     if video_details == None:
         print("Erro por causa de autorização")
         return
+    video_details['transcription'] = get_transcription(video_id)
     total_comment_count = video_details['comment_count']  # Assumindo que 'comment_count' é o total de comentários disponíveis
 
     pd.DataFrame([video_details]).to_csv('files/videos_info.csv', mode='a', header=not videos_file_exists, index=False)
@@ -645,7 +645,6 @@ def main():
                             print("A coleta dos detalhes do vídeo falhou. Indo para o próximo vídeo.")
                             continue
 
-                        video_details['transcription'] = get_transcription(video_id)
                         comment_count = video_details.get('comment_count', 0)
                         print("Title:", video_details.get('title', 'N/A'), "# comments", comment_count)
                         
