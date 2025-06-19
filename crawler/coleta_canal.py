@@ -30,7 +30,11 @@ socket.setdefaulttimeout(timeout_in_sec)
 
 def get_transcription(id):
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(id, languages=['pt-br'])  # Ajuste idiomas, se necessário
+        transcript = YouTubeTranscriptApi.get_transcript(id, languages=['pt'])  # Ajuste idiomas, se necessário
+        transcription_text = " ".join([entry['text'] for entry in transcript])
+        return transcription_text
+    except YouTubeTranscriptApi.NoTranscriptFound:
+        transcript = YouTubeTranscriptApi.get_transcript(id, languages=['en'])  # Ajuste idiomas, se necessário
         transcription_text = " ".join([entry['text'] for entry in transcript])
         return transcription_text
     except Exception:
@@ -418,6 +422,7 @@ def process_video(video_id, video_title, processed_videos):
     comments_file_exists = os.path.isfile('files/comments_info.csv')
 
     video_details = get_video_details(video_id)
+    video_details['transcription'] = get_transcription(video_id)
     if video_details == None:
         print("Erro por causa de autorização")
         return
@@ -644,8 +649,7 @@ def main():
                         comment_count = video_details.get('comment_count', 0)
                         print("Title:", video_details.get('title', 'N/A'), "# comments", comment_count)
                         
-                        if comment_count >= 0:
-                            process_video(video_id, "", processed_videos)
+                        process_video(video_id, "", processed_videos)
                 except Exception as e:
                     print(f"Ocorreu um erro ao processar o vídeo {video_id}: {e}")
                     pass
